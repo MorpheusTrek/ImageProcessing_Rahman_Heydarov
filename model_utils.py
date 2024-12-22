@@ -179,33 +179,28 @@ def build_model(hp):
         layers.Conv2D(128, (3, 3), activation='relu', padding="same"),
         layers.Conv2D(128, (3, 3), activation='relu', padding="same"),
         layers.MaxPooling2D((2, 2)),
-
-        # Fourth Convolutional Block
-        layers.Conv2D(256, (3, 3), activation='relu', padding="same"),
-        layers.Conv2D(256, (3, 3), activation='relu', padding="same"),
-        layers.MaxPooling2D((2, 2)),
-
-        # Fully Connected Layers
-        layers.Flatten(),
     ])
 
+    filters = hp.Choice("filters", [128,256,512,1024])
+    kernel = hp.Choice("kernel", [1,3,5,7])
 
-    model.add(layers.Dense(hp.Int("units", 128, 1024, step=128), activation='relu'))  # Tune units in dense layer
+    model.add(layers.Conv2D(filters, (kernel,kernel), activation='relu', padding="same"),)
+    model.add(layers.Conv2D(filters, (kernel,kernel), activation='relu', padding="same"),)
+    model.add(layers.MaxPooling2D((2, 2)))
+
+    model.add(layers.GlobalAveragePooling2D())
+
+    dense_units = hp.Choice("dense_units", [16,64,256,1024])
+    dropout = hp.Choice("dropout", [0.2,0.25,0.3,0.5])
+
+    model.add(layers.Dense(dense_units, activation='relu'))  # Tune units in dense layer
+
+    model.add(layers.Dropout(dropout))
     model.add(layers.Dense(10, activation='softmax'))
-
-    # Hyperparameters for optimizer and learning rate
-    optimizer_choice = hp.Choice("optimizer", ["adam", "sgd"])
-    learning_rate = hp.Choice("learning_rate", [1e-2, 1e-3, 1e-4, 1e-5])
-
-    # Choose the optimizer
-    if optimizer_choice == "adam":
-        optimizer = Adam(learning_rate=learning_rate)
-    else:
-        optimizer = SGD(learning_rate=learning_rate)
 
     # Compile the model
     model.compile(
-        optimizer=optimizer,
+        optimizer="adam",
         loss='sparse_categorical_crossentropy',
         metrics=['accuracy']
     )
